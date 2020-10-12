@@ -17,9 +17,10 @@ class User(db.Model):
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
     create_time = db.Column(db.DateTime, default=datetime.now)
 
-    def __init__(self, name, email):
+    def __init__(self, name, email, role_id):
         self.name = name
         self.email = email
+        self.role_id = role_id
 
     @property
     def password(self):

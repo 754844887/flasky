@@ -52,7 +52,7 @@ def get_token():
 @api_bp.route('/register', methods=['POST'])
 def register():
     data = request.get_data()
-    json_data = json.loads(data.decoindexde('utf-8'))
+    json_data = json.loads(data.decode('utf-8'))
     name = json_data['name']
     email = json_data['email']
     password = json_data['password']
@@ -64,7 +64,7 @@ def register():
             'code': 400,
             'extra': {}
             })
-    new_user = User(name=name, email=email)
+    new_user = User(name=name, email=email, role_id=1)
     new_user.password = password
     db.session.add(new_user)
     db.session.commit()
@@ -76,8 +76,29 @@ def register():
             })
 
 
-@api_bp.route('/hosts')
+# 添加权限
+@api_bp.route('/add_role', methods=['POST'])
 @auth.login_required
-def get_host_list():
-    hosts = Host.query.all()
-    return 'index'
+def add_role(user_id):
+    result = {
+            'data': {},
+            'msg': "",
+            'code': "",
+            'extra': {}
+            }
+    data = request.get_data()
+    json_data = json.loads(data.decode('utf-8'))
+    perm = json_data['perm']
+    user_id = json_data['user_id']  
+    user = User.query.filter_by(id=user_id).first()
+    if not user:
+        result['msg'] = "用户不存在！"
+        result['code'] = 404
+        return jsonify(result)
+    
+    user.role.add_permission(perm)
+    result['msg'] = "添加权限成功！"
+    result['code'] = 200
+    return jsonify(result)    
+
+
