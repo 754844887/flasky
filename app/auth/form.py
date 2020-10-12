@@ -9,6 +9,6 @@ class RegisterForm(FlaskForm):
     email = StringField('email', [Email(message='请输入正确的邮箱地址！')])
     password = PasswordField('password', [
         DataRequired(),
-        EqualTo('confirm', message='两次输入的密码不一致！')
+        EqualTo('password2', message='两次输入的密码不一致！')
     ])
-    confirm = PasswordField('repeat password')
+    password2 = PasswordField('repeat password')
