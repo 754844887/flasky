@@ -3,17 +3,17 @@ import config
 from flask_wtf import CSRFProtect
 from flask_wtf.csrf import generate_csrf
 from flask_cors import CORS
+from .auth import api_bp
+from .models import db
+from .main import main_bp
 
 
 def create_app():
     app = Flask(__name__)
-    app.config.from_object(config)
-    from .models import db
-    db.init_app(app)
-    
-    from .auth import api_bp
+    app.config.from_object(config) 
+    db.init_app(app) 
     app.register_blueprint(api_bp)
-
+    app.register_blueprint(main_bp)
     csrf = CSRFProtect()
     csrf.init_app(app)
 

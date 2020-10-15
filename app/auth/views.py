@@ -5,6 +5,7 @@ from flask import jsonify, g, make_response, request
 from .form import RegisterForm
 from app.models import db
 import json
+from app.decorators import admin_required, permission_required
 
 auth = HTTPBasicAuth()
 
@@ -27,7 +28,7 @@ def auth_error():
     return make_response(
         jsonify({
             'data': {},
-            'msg': "没有权限！",
+            'msg': "帐号或密码错误！",
             'code': 403,
             'extra': {}
         }), 403)
@@ -64,7 +65,7 @@ def register():
             'code': 400,
             'extra': {}
             })
-    new_user = User(name=name, email=email, role_id=1)
+    new_user = User(name=name, email=email)
     new_user.password = password
     db.session.add(new_user)
     db.session.commit()
@@ -76,10 +77,11 @@ def register():
             })
 
 
-# 添加权限
-@api_bp.route('/add_role', methods=['POST'])
+# 添加/删除权限
+@api_bp.route('/edit_role', methods=['PUT'])
 @auth.login_required
-def add_role(user_id):
+@admin_required
+def edit_role():
     result = {
             'data': {},
             'msg': "",
@@ -88,16 +90,17 @@ def add_role(user_id):
             }
     data = request.get_data()
     json_data = json.loads(data.decode('utf-8'))
-    perm = json_data['perm']
+    role_name = json_data['role']
     user_id = json_data['user_id']  
     user = User.query.filter_by(id=user_id).first()
     if not user:
         result['msg'] = "用户不存在！"
         result['code'] = 404
         return jsonify(result)
-    
-    user.role.add_permission(perm)
-    result['msg'] = "添加权限成功！"
+    user.role = Role.query.filter_by(name=role_name).first()
+    db.session.add(user)
+    db.session.commit()
+    result['msg'] = "修改权限成功！"
     result['code'] = 200
     return jsonify(result)    
 

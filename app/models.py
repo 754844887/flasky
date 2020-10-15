@@ -7,55 +7,14 @@ from flask import current_app
 
 db = SQLAlchemy()
 
-
-class User(db.Model):
-    __tablename__ = 'users'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(64), nullable=False)
-    email = db.Column(db.String(64), unique=True, nullable=False)
-    password_hash = db.Column(db.String(128))
-    role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
-    create_time = db.Column(db.DateTime, default=datetime.now)
-
-    def __init__(self, name, email, role_id):
-        self.name = name
-        self.email = email
-        self.role_id = role_id
-
-    @property
-    def password(self):
-        raise AttributeError('password 不是一个可读的属性！')
-
-    @password.setter
-    def password(self, password):
-        self.password_hash = generate_password_hash(password)
-
-    def check_password(self, password):
-        return check_password_hash(self.password_hash, password)
-
-    def generate_auth_token(self, expiration=3600):
-        s = Serializer(current_app.config['SECRET_KEY'], expires_in=expiration)
-        return s.dumps({'id': self.id})
-
-    @staticmethod
-    def check_auth_token(token):
-        s = Serializer(current_app.config['SECRET_KEY'])
-        try:
-            data = s.loads(token)
-        except:
-            return None
-        return User.query.get(data['id'])
-
-    def __repr__(self):
-        return '<User %r>' % self.name
-
-
+# 权限枚举类
 class Permission:
     READ = 2
     WRITE = 4
     ADMIN = 8
 
 
+# 权限表
 class Role(db.Model):
     __tablename__ = 'roles'
     id = db.Column(db.Integer, primary_key=True)
@@ -107,6 +66,55 @@ class Role(db.Model):
         return '<Role %r>' % self.name
 
 
+# 用户表
+class User(db.Model):
+    __tablename__ = 'users'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(64), nullable=False)
+    email = db.Column(db.String(64), unique=True, nullable=False)
+    password_hash = db.Column(db.String(128))
+    role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
+    create_time = db.Column(db.DateTime, default=datetime.now)
+
+    def __init__(self, name, email):
+        self.name = name
+        self.email = email
+
+    @property
+    def password(self):
+        raise AttributeError('password 不是一个可读的属性！')
+
+    @password.setter
+    def password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
+    def generate_auth_token(self, expiration=3600):
+        s = Serializer(current_app.config['SECRET_KEY'], expires_in=expiration)
+        return s.dumps({'id': self.id})
+
+    def can(self, perm):
+        return self.role is not None and self.role.has_permission(perm)    
+
+    def is_administrator(self):
+        return self.role.has_permission(Permission.ADMIN)    
+
+    @staticmethod
+    def check_auth_token(token):
+        s = Serializer(current_app.config['SECRET_KEY'])
+        try:
+            data = s.loads(token)
+        except:
+            return None
+        return User.query.get(data['id'])
+
+    def __repr__(self):
+        return '<User %r>' % self.name
+
+
+# 主机表
 class Host(db.Model):
     __tablename__ = 'hosts'
     id = db.Column(db.Integer, primary_key=True)
@@ -120,6 +128,19 @@ class Host(db.Model):
     use = db.Column(db.String(64)) 
     is_active = db.Column(db.Boolean, default=True)
     create_time = db.Column(db.DateTime, default=datetime.now)
+
+    def to_json(self):
+        json_host = {
+            'id': self.id,
+            'name': self.name,
+            'in_ipaddr': self.in_ipaddr,
+            'out_ipaddr': self.out_ipaddr,
+            'location': self.location,
+            'use': self.use,
+            'is_active': self.is_active,
+            'create_time': self.create_time
+        }
+        return json_host
 
     def __repr__(self):
         return '<Host %r>' % self.name
