@@ -8,24 +8,26 @@ import json
 
 @main_bp.route('/hosts', methods=['GET'])
 def get_hosts():
-    page = request.args.get('page', 1, type=int)
+    current_page = request.args.get('current_page', 1, type=int)
+    page_size = request.args.get('page_size', type=int)
+    print(page_size)
     paginate = Host.query.order_by(Host.create_time.desc()).paginate(
-        page=page, per_page=10, error_out=False)
+        page=current_page, per_page=page_size, error_out=False)
     hosts = paginate.items
     pages = paginate.pages
-    next_page = None
+    next = None
     if paginate.has_next:
-        next_page = page + 1
-    prev_page = None
+        next = current_page + 1
+    prev = None
     if paginate.has_prev:
-        prev_page = page - 1
+        prev = current_page - 1
 
     return jsonify({
         'data': {
             'hosts': [host.to_json() for host in hosts],
-            'total': paginate.total,
-            'next_page': next_page,
-            'prev_page': prev_page,
+            'total': int(paginate.total),
+            'next': next,
+            'prev': prev,
             'pages': pages
         },
         'msg': "success!",

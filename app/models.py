@@ -127,7 +127,7 @@ class Host(db.Model):
     location = db.Column(db.String(64)) 
     use = db.Column(db.String(64)) 
     is_active = db.Column(db.Boolean, default=True)
-    create_time = db.Column(db.DateTime, default=datetime.now)
+    create_time = db.Column(db.DateTime, default=datetime.now())
 
     def to_json(self):
         json_host = {
@@ -138,7 +138,7 @@ class Host(db.Model):
             'location': self.location,
             'use': self.use,
             'is_active': self.is_active,
-            'create_time': self.create_time
+            'create_time': self.create_time.strftime('%Y-%m-%d %H:%M:%S')
         }
         return json_host
 
